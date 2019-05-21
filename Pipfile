@@ -10,6 +10,7 @@ django = "*"
 mysqlclient = "*"
 djangorestframework = "*"
 django-cors-headers = "*"
+pylint-django = "*"
 
 [requires]
 python_version = "3.7"
