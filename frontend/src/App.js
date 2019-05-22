@@ -1,50 +1,29 @@
 import React, { Component } from "react";
-const todoItems = [
-  {
-      id: 1,
-      title: "competitive programming",
-      description: "solve 5 or 6 problem from codeforces",
-      completed: false
-  },
-  {
-    id: 2,
-    title: "React",
-    description: "Read few articles/tutorial related to React",
-    completed: false
-  },
-  {
-    id: 3,
-    title:  "todo project",
-    description: "work on this todo project",
-    completed: true
-  },
-  {
-    id: 4,
-    title: "articles",
-    description: "Read few articles from medium",
-    completed: false
-  },
-  {
-    id: 5,
-    title: "sports",
-    description: "visit friend's house to play.",
-    completed: false
-  },
-  {
-    id: 6,
-    title: "new todo",
-    description: "something random",
-    completed: true
-  }
-];
+import Modal from "./components/Modal";
+import axios from "axios";
+
 class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
       viewCompleted: false,
-      todoList: todoItems
+      activeItem: {
+        title: "",
+        description: "",
+        completed: false
+      },
+      todoList: []
     };
   }
+  componentDidMount() {
+    this.refreshList();
+  }
+  refreshList = () => {
+    axios
+      .get("http://localhost:8000/api/todos/")
+      .then(res => this.setState({ todoList: res.data }))
+      .catch(err => console.log(err));
+  };
   displayCompleted = status => {
     if (status) {
       return this.setState({ viewCompleted: true });
@@ -88,11 +67,49 @@ class App extends Component {
           {item.title}
         </span>
         <span>
-          <button className="btn btn-secondary mr-2"> Edit </button>
-          <button className="btn btn-danger">Delete </button>
+          <button
+            onClick={() => this.editItem(item)}
+            className="btn btn-secondary mr-2"
+          >
+            {" "}
+            Edit{" "}
+          </button>
+          <button
+            onClick={() => this.handleDelete(item)}
+            className="btn btn-danger"
+          >
+            Delete{" "}
+          </button>
         </span>
       </li>
     ));
+  };
+  toggle = () => {
+    this.setState({ modal: !this.state.modal });
+  };
+  handleSubmit = item => {
+    this.toggle();
+    if (item.id) {
+      axios
+        .put(`http://localhost:8000/api/todos/${item.id}/`, item)
+        .then(res => this.refreshList());
+      return;
+    }
+    axios
+      .post("http://localhost:8000/api/todos/", item)
+      .then(res => this.refreshList());
+  };
+  handleDelete = item => {
+    axios
+      .delete(`http://localhost:8000/api/todos/${item.id}`)
+      .then(res => this.refreshList());
+  };
+  createItem = () => {
+    const item = { title: "", description: "", completed: false };
+    this.setState({ activeItem: item, modal: !this.state.modal });
+  };
+  editItem = item => {
+    this.setState({ activeItem: item, modal: !this.state.modal });
   };
   render() {
     return (
@@ -102,7 +119,9 @@ class App extends Component {
           <div className="col-md-6 col-sm-10 mx-auto p-0">
             <div className="card p-3">
               <div className="">
-                <button className="btn btn-primary">Add task</button>
+                <button onClick={this.createItem} className="btn btn-primary">
+                  Add task
+                </button>
               </div>
               {this.renderTabList()}
               <ul className="list-group list-group-flush">
@@ -111,6 +130,13 @@ class App extends Component {
             </div>
           </div>
         </div>
+        {this.state.modal ? (
+          <Modal
+            activeItem={this.state.activeItem}
+            toggle={this.toggle}
+            onSave={this.handleSubmit}
+          />
+        ) : null}
       </main>
     );
   }
